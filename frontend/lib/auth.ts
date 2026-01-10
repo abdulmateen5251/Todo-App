@@ -11,14 +11,33 @@ import type { JWT } from 'next-auth/jwt';
 interface Credentials {
   email?: string;
   password?: string;
+  name?: string;
+}
+
+/**
+ * Generate a consistent user ID from email for development
+ * Uses a simple hash to ensure same email = same ID
+ */
+async function generateUserIdFromEmail(email: string): Promise<string> {
+  // For development, create a deterministic UUID based on email
+  const encoder = new TextEncoder();
+  const data = encoder.encode(email);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  // Format as UUID (take first 32 chars and format as UUID)
+  return [
+    hashHex.slice(0, 8),
+    hashHex.slice(8, 12),
+    hashHex.slice(12, 16),
+    hashHex.slice(16, 20),
+    hashHex.slice(20, 32)
+  ].join('-');
 }
 
 /**
  * NextAuth configuration options
- * 
- * For Better Auth integration, this should be updated to use Better Auth's
- * authentication flow. Current implementation provides a basic setup that
- * can be extended.
  */
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -28,44 +47,47 @@ export const authOptions: NextAuthOptions = {
       type: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email', placeholder: 'user@example.com' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
+        name: { label: 'Name', type: 'text' }
       },
       async authorize(credentials: Credentials | undefined): Promise<User | null> {
-        // TODO: Integrate with Better Auth backend
-        // This is a placeholder implementation for development
-        
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
-        // In production, validate credentials against Better Auth
-        // For now, allow any credentials in development mode
+        // Development mode: Accept any credentials
         if (process.env.NODE_ENV === 'development') {
+          // Generate consistent user ID based on email
+          const userId = await generateUserIdFromEmail(credentials.email);
+          
           return {
-            id: crypto.randomUUID(),
+            id: userId,
             email: credentials.email,
-            name: credentials.email.split('@')[0],
+            name: credentials.name || credentials.email.split('@')[0],
           };
         }
 
-        // Production: Call Better Auth API to validate credentials
-        // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     email: credentials.email,
-        //     password: credentials.password,
-        //   }),
-        // });
-        //
-        // if (!response.ok) {
-        //   return null;
-        // }
-        //
-        // const user = await response.json();
-        // return user;
+        // Production: Call backend API to validate credentials
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
 
-        return null;
+          if (!response.ok) {
+            return null;
+          }
+
+          const user = await response.json();
+          return user;
+        } catch (error) {
+          console.error('Auth error:', error);
+          return null;
+        }
       }
     }
   ],

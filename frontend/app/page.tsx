@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { TaskList } from '@/components/TaskList';
 import { TaskForm } from '@/components/TaskForm';
 import { TaskEditModal } from '@/components/TaskEditModal';
@@ -10,31 +12,19 @@ import { useTasks } from '@/hooks/useTasks';
 import { useToast } from '@/hooks/useToast';
 import { Task, TaskCreateRequest, TaskUpdateRequest } from '@/types/task';
 
-/**
- * Get or create a development user ID.
- * TODO: Replace with actual NextAuth session user ID in Phase 4
- */
-function getDevUserId(): string {
-  if (typeof window !== 'undefined') {
-    let userId = localStorage.getItem('dev_user_id');
-    if (!userId) {
-      // Generate a random UUID for development testing
-      userId = crypto.randomUUID();
-      localStorage.setItem('dev_user_id', userId);
-      console.log('[DEV] Created new user ID:', userId);
-    }
-    return userId;
-  }
-  return '';
-}
-
 export default function Home() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [userId, setUserId] = useState<string>('');
   
-  // Initialize user ID on client side
+  // Redirect to sign-in if not authenticated
   useEffect(() => {
-    setUserId(getDevUserId());
-  }, []);
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    } else if (status === 'authenticated' && session?.user?.id) {
+      setUserId(session.user.id);
+    }
+  }, [status, session, router]);
   
   const { tasks, loading, error, createTask, updateTask, toggleTask, deleteTask } = useTasks(userId);
   const { toasts, removeToast, success, error: showError } = useToast();
@@ -44,6 +34,20 @@ export default function Home() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [deletedTask, setDeletedTask] = useState<{ task: Task; timeoutId: NodeJS.Timeout } | null>(null);
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
   const handleCreateTask = async (data: TaskCreateRequest | TaskUpdateRequest) => {
     try {
@@ -142,15 +146,6 @@ export default function Home() {
     active: tasks.filter(t => !t.completed).length,
     completed: tasks.filter(t => t.completed).length,
   };
-  
-  // Don't render until we have a user ID
-  if (!userId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
@@ -158,28 +153,43 @@ export default function Home() {
         {/* Header */}
         <header className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Tasks</h1>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="w-full sm:w-auto min-h-[44px] px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-              aria-label={showForm ? 'Close form' : 'Add task'}
-            >
-              {showForm ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
-                  </svg>
-                  Close
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-                  </svg>
-                  Add Task
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Tasks</h1>
+              {session?.user?.email && (
+                <span className="text-sm text-gray-500 hidden sm:inline">
+                  {session.user.email}
                 </span>
               )}
-            </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              >
+                Sign Out
+              </button>
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="w-full sm:w-auto min-h-[44px] px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                aria-label={showForm ? 'Close form' : 'Add task'}
+              >
+                {showForm ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                    </svg>
+                    Close
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                    </svg>
+                    Add Task
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Stats */}

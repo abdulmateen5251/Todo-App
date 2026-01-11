@@ -32,14 +32,32 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      // In development mode, directly sign in (since we accept any credentials)
-      // In production, you would:
-      // 1. Call your backend API to create the user
-      // 2. Then sign in with the credentials
+      // First, register the user with the backend
+      // Use environment variable for API URL (works in both dev and production)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       
+      const registerResponse = await fetch(`${apiUrl}/api/users/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+        }),
+      });
+
+      if (!registerResponse.ok) {
+        const errorData = await registerResponse.json();
+        setError(errorData.detail || 'Failed to create account');
+        setLoading(false);
+        return;
+      }
+
+      // If registration successful, sign in
       const result = await signIn('credentials', {
         email,
         password,
+        name,
         redirect: false,
       });
 

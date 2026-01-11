@@ -14,6 +14,7 @@ from slowapi.errors import RateLimitExceeded
 
 from src.db.session import init_db
 from src.api.tasks import router as tasks_router
+from src.api.users import router as users_router
 
 load_dotenv()
 
@@ -52,15 +53,17 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS Configuration
-origins = [
-    os.getenv("FRONTEND_URL", "http://localhost:3000"),
-    "http://localhost:3000",  # Development frontend
+# CORS Configuration - Allow Vercel and localhost
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+allowed_origins = [
+    "http://localhost:3000",  # Local development
+    "https://*.vercel.app",   # Vercel deployments
 ]
+allowed_origins.extend(cors_origins)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # In production, restrict to specific domains
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -112,6 +115,7 @@ async def log_requests(request: Request, call_next):
 
 
 # Include API Routers
+app.include_router(users_router)
 app.include_router(tasks_router, prefix="/api", tags=["tasks"])
 
 

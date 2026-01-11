@@ -35,20 +35,6 @@ export default function Home() {
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [deletedTask, setDeletedTask] = useState<{ task: Task; timeoutId: NodeJS.Timeout } | null>(null);
 
-  // Show loading while checking authentication
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    );
-  }
-
-  // Don't render if not authenticated (will redirect)
-  if (status === 'unauthenticated') {
-    return null;
-  }
-
   const handleCreateTask = async (data: TaskCreateRequest | TaskUpdateRequest) => {
     try {
       // For creation, description is required
@@ -146,6 +132,20 @@ export default function Home() {
     active: tasks.filter(t => !t.completed).length,
     completed: tasks.filter(t => t.completed).length,
   };
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-4 sm:py-8">

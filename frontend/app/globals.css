@@ -2,20 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  @keyframes slide-up {
-    from {
-      transform: translateY(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
+@font-face {
+  font-family: 'Sekuya';
+  src: url('/fonts/Sekuya-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
+:root {
+  --background: #212b0f;
+  --accent-green: #47d21c;
+  --accent-orange: #d5995b;
+  --neutral-tan: #d6c3ab;
+  --neutral-yellow: #f2ec37;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--neutral-tan);
+  font-family: 'Sekuya', sans-serif;
+  overflow-x: hidden;
+}
+
+@layer utilities {
   .animate-slide-up {
     animation: slide-up 0.3s ease-out;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 

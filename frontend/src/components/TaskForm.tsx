@@ -46,7 +46,6 @@ export function TaskForm({
     };
     
     // Only include due_date if it has a value
-    // Convert from YYYY-MM-DD to ISO 8601 datetime format
     if (dueDate) {
       data.due_date = `${dueDate}T00:00:00`;
     }
@@ -61,7 +60,7 @@ export function TaskForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-card p-4 rounded-xl border border-border backdrop-blur-sm shadow-lg">
       {/* Description input */}
       <div>
         <label htmlFor="description" className="sr-only">
@@ -73,15 +72,15 @@ export function TaskForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What needs to be done?"
-          className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 text-sm bg-background border border-border text-text placeholder:text-text-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-inner"
           maxLength={200}
-          autoFocus
+          autoFocus={!initialData}
         />
         <div className="mt-1 flex justify-between items-center">
-          {error && (
-            <p className="text-xs text-red-600">{error}</p>
-          )}
-          <p className="text-xs text-gray-400 ml-auto">
+          {error ? (
+            <p className="text-xs text-primary-light font-bold animate-pulse">{error}</p>
+          ) : <span></span>}
+          <p className="text-xs text-text-muted">
             {description.length}/200
           </p>
         </div>
@@ -89,7 +88,7 @@ export function TaskForm({
 
       {/* Due date input */}
       <div>
-        <label htmlFor="due-date" className="block text-xs font-medium text-gray-700 mb-1">
+        <label htmlFor="due-date" className="block text-xs font-medium text-text-muted mb-1">
           Due date (optional)
         </label>
         <input
@@ -97,16 +96,16 @@ export function TaskForm({
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          min={new Date().toISOString().split('T')[0]} // Prevent past dates
+          className="w-full px-4 py-2 text-sm bg-background border border-border text-text rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all dark:[color-scheme:dark]"
+          min={new Date().toISOString().split('T')[0]}
         />
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex gap-3 pt-2">
         <button
           type="submit"
-          className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          className="flex-1 px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary-dark hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)]"
         >
           {submitLabel}
         </button>
@@ -115,7 +114,7 @@ export function TaskForm({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-text-muted bg-white/5 border border-border rounded-lg hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all"
           >
             Cancel
           </button>

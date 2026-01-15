@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/**/*.{js,ts,jsx,tsx,mdx}',
@@ -7,18 +8,22 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#212b0f',
-        accent: {
-          green: '#47d21c',
-          orange: '#d5995b',
-        },
-        neutral: {
-          tan: '#d6c3ab',
-          yellow: '#f2ec37',
-        },
+        background: 'var(--background)',
+        'background-secondary': 'var(--background-secondary)',
+        surface: 'var(--surface)',
+        primary: 'var(--primary)',
+        'primary-dark': 'var(--primary-dark)',
+        'primary-light': 'var(--primary-light)',
+        secondary: 'var(--secondary)',
+        'secondary-dark': 'var(--secondary-dark)',
+        text: 'var(--text)',
+        'text-muted': 'var(--text-muted)',
+        border: 'var(--border)',
+        card: 'var(--card)',
       },
       fontFamily: {
-        sekuya: ['Sekuya', 'sans-serif'],
+        sans: ['Archivo Black', 'system-ui', 'sans-serif'],
+        archivo: ['Archivo Black', 'sans-serif'],
       },
     },
   },

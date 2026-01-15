@@ -10,19 +10,68 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Archivo Black';
+  src: url('/fonts/ArchivoBlack-Regular.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
-  --background: #212b0f;
-  --accent-green: #47d21c;
-  --accent-orange: #d5995b;
-  --neutral-tan: #d6c3ab;
-  --neutral-yellow: #f2ec37;
+  /* Light Theme (Default) */
+  --background: #FFFFFF;           /* White - main background */
+  --background-secondary: #F8FAFC; /* Very Light Slate - secondary surfaces */
+  --surface: #F1F5F9;              /* Light Slate - cards and panels */
+  --primary: #4F46E5;              /* Indigo - primary accent */
+  --primary-dark: #4338CA;         /* Darker indigo for hover states */
+  --primary-light: #6366F1;        /* Lighter indigo */
+  --secondary: #22D3EE;            /* Cyan - secondary accent */
+  --secondary-dark: #06B6D4;       /* Darker cyan */
+  --text: #0F172A;                 /* Near Black - primary text */
+  --text-muted: #475569;           /* Slate Gray - muted text */
+  --border: #E2E8F0;               /* Light border */
+  --card: #F1F5F9;                 /* Card background */
+}
+
+.dark {
+  --background: #0B0F1A;           /* Deep Navy/Charcoal - main background */
+  --background-secondary: #12182A; /* Dark Slate - secondary surfaces */
+  --surface: #1E293B;              /* Dark Slate - cards and panels */
+  --primary: #4F46E5;              /* Indigo/Electric Blue - primary accent */
+  --primary-dark: #4338CA;         /* Darker indigo for hover states */
+  --primary-light: #6366F1;        /* Lighter indigo */
+  --secondary: #22D3EE;            /* Cyan Glow - secondary accent */
+  --secondary-dark: #06B6D4;       /* Darker cyan */
+  --text: #E5E7EB;                 /* Soft White - primary text */
+  --text-muted: #9CA3AF;           /* Gray - muted text */
+  --border: #1E293B;               /* Border color */
+  --card: #12182A;                 /* Card background */
 }
 
 body {
   background-color: var(--background);
-  color: var(--neutral-tan);
-  font-family: 'Sekuya', sans-serif;
+  color: var(--text);
+  font-family: 'Archivo Black', sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: ease-in-out;
+  transition-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0ms;
+    animation-duration: 0ms;
+  }
 }
 
 @layer utilities {

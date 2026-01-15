@@ -3,12 +3,14 @@
 import { useSession } from 'next-auth/react';
 import { Hero } from '@/components/landing/Hero';
 import { Features } from '@/components/landing/Features';
+import { About } from '@/components/landing/About';
 import { Footer } from '@/components/landing/Footer';
 import { Navbar } from '@/components/ui/Navbar';
 import { Shell, Gradients } from '@/components/ui/Layout';
+import { Dashboard } from '@/components/Dashboard';
 
 export default function Home() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
 
   if (status === 'loading') {
     return (
@@ -18,7 +20,16 @@ export default function Home() {
     );
   }
 
-  // Show the landing page for everyone (authenticated and non-authenticated)
+  // If authenticated, show the dashboard
+  if (session) {
+    return (
+      <Shell>
+        <Dashboard />
+      </Shell>
+    );
+  }
+
+  // If not authenticated, show the landing page
   return (
     <Shell>
       <Gradients />
@@ -26,6 +37,7 @@ export default function Home() {
       <main>
         <Hero />
         <Features />
+        <About />
       </main>
       <Footer />
     </Shell>

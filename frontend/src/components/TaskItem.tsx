@@ -25,52 +25,54 @@ export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
   };
 
   return (
-    <div className="group flex items-start gap-3 p-3 sm:p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+    <div className="group flex items-start gap-3 p-3 sm:p-4 bg-card rounded-xl border border-border hover:border-primary/50 hover:bg-card/80 transition-all duration-300 shadow-sm hover:shadow-[0_0_15px_rgba(37,99,235,0.2)]">
       {/* Checkbox */}
       <button
         onClick={() => onToggle(task.id)}
         className="flex-shrink-0 mt-0.5 min-w-[44px] min-h-[44px] flex items-center justify-center sm:min-w-0 sm:min-h-0"
         aria-label={task.completed ? 'Mark as incomplete' : 'Mark as complete'}
       >
-        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-300 ${
           task.completed 
-            ? 'bg-blue-500 border-blue-500' 
-            : 'border-gray-300 hover:border-blue-400'
+            ? 'bg-primary border-primary shadow-[0_0_10px_rgba(37,99,235,0.5)]' 
+            : 'border-text-muted hover:border-primary group-hover:scale-110'
         }`}>
           {task.completed && (
-            <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
-              <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg className="w-3 h-3 text-white font-bold" viewBox="0 0 12 12" fill="none">
+              <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           )}
         </div>
       </button>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+      <div className="flex-1 min-w-0 pt-0.5">
+        <p className={`text-sm font-medium transition-all ${task.completed ? 'line-through text-text-muted' : 'text-text'}`}>
           {task.description}
         </p>
         
         {task.due_date && (
-          <p className={`text-xs mt-1 ${
+          <p className={`text-xs mt-1.5 flex items-center gap-1.5 ${
             isOverdue(task.due_date) 
-              ? 'text-red-600 font-medium' 
+              ? 'text-primary-light font-bold animate-pulse' 
               : task.completed 
-                ? 'text-gray-400' 
-                : 'text-gray-500'
+                ? 'text-text-muted' 
+                : 'text-text'
           }`}>
-            {isOverdue(task.due_date) && '⚠️ '}
+            {isOverdue(task.due_date) && (
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary-light shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+            )}
             Due {formatDate(task.due_date)}
           </p>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex-shrink-0 flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+      <div className="flex-shrink-0 flex gap-1 opacity-100 sm:opacity-0 sm:translate-x-4 sm:group-hover:translate-x-0 sm:group-hover:opacity-100 transition-all duration-300">
         {onEdit && (
           <button
             onClick={() => onEdit(task)}
-            className="p-2.5 sm:p-1.5 text-gray-400 hover:text-blue-600 transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
+            className="p-2.5 sm:p-1.5 text-text-muted hover:text-primary hover:bg-white/10 rounded-md transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
             aria-label="Edit task"
           >
             <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
@@ -81,7 +83,7 @@ export function TaskItem({ task, onToggle, onDelete, onEdit }: TaskItemProps) {
         
         <button
           onClick={() => onDelete(task.id)}
-          className="p-2.5 sm:p-1.5 text-gray-400 hover:text-red-600 transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
+          className="p-2.5 sm:p-1.5 text-text-muted hover:text-primary-light hover:bg-primary/10 rounded-md transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
           aria-label="Delete task"
         >
           <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">

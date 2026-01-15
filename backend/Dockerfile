@@ -11,6 +11,12 @@ ENV PYTHONUNBUFFERED=1 \
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    g++ \
+    make \
+    libffi-dev \
+    libssl-dev \
+    cargo \
+    rustc \
     postgresql-client \
     curl \
     && rm -rf /var/lib/apt/lists/*

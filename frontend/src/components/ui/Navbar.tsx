@@ -63,7 +63,7 @@ export function Navbar() {
               </Link>
             )}
             <a
-              href="https://github.com"
+              href="https://github.com/abdulmateen5251"
               target="_blank"
               rel="noopener noreferrer"
               className="text-text-muted hover:text-primary transition-colors"
@@ -162,7 +162,7 @@ export function Navbar() {
               </Link>
             )}
             <a
-              href="https://github.com"
+              href="https://github.com/abdulmateen5251"
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setIsOpen(false)}

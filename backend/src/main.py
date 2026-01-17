@@ -53,20 +53,28 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS Configuration - Allow Vercel and localhost
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+# CORS Configuration - Allow Vercel, localhost, and Hugging Face
+cors_origins_env = os.getenv("CORS_ORIGINS", "")
 allowed_origins = [
-    "http://localhost:3000",  # Local development
-    "https://*.vercel.app",   # Vercel deployments
+    "http://localhost:3000",           # Local development
+    "http://localhost:3001",           # Alternative local port
+    "https://*.vercel.app",            # Vercel preview deployments
+    "https://huggingface.co",          # Hugging Face UI
 ]
-allowed_origins.extend(cors_origins)
+
+# Add custom origins from environment variable
+if cors_origins_env:
+    allowed_origins.extend([origin.strip() for origin in cors_origins_env.split(",") if origin.strip()])
+
+logger.info(f"CORS allowed origins: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to specific domains
+    allow_origins=["*"],  # Allow all in dev - set CORS_ORIGINS in production
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Process-Time", "X-Request-ID"],
 )
 
 

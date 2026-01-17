@@ -99,7 +99,7 @@ jobs:
       - name: Build frontend
         working-directory: ./frontend
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_API_URL: https://abdulmateen5251-hacton.hf.space
         run: npm run build
 
   lint-and-format:

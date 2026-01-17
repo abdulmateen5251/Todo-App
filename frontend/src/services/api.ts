@@ -4,7 +4,7 @@
 
 import type { Task, TaskCreateRequest, TaskUpdateRequest } from '@/types/task';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://abdulmateen5251-hacton.hf.space';
 
 /**
  * Sleep utility for retry delays

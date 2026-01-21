@@ -10,7 +10,7 @@
 This project transforms a console-based todo application into a full-stack web application with user authentication, persistent storage, and modern UI/UX patterns.
 
 ---
-
+.
 ## What Was Built
 
 ### 🎯 Core Features Implemented

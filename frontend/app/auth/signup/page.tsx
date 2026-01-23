@@ -34,7 +34,7 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://abdulmateen5251-hacton.hf.space';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://abdulmateen5251-phase-2.hf.space';
       
       const registerResponse = await fetch(`${apiUrl}/api/users/register`, {
         method: 'POST',

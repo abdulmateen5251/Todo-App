@@ -34,7 +34,7 @@ export const authOptions: NextAuthOptions = {
         try {
           // Use environment variable for API URL
           // In Docker: http://backend:8000, In Vercel: https://your-api.vercel.app
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://abdulmateen5251-phase-2.hf.space/';
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://abdulmateen5251-phase-2.hf.space';
           const response = await fetch(`${apiUrl}/api/users/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

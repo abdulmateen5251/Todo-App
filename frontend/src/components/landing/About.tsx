@@ -22,7 +22,7 @@ export function About() {
           transition={{ delay: 0.2 }}
           className="text-lg md:text-xl text-text-muted leading-relaxed mb-6"
         >
-          We believe productivity isn't just about doing more—it's about doing what matters.
+          We believe productivity isn&apos;t just about doing more—it&apos;s about doing what matters.
           Our vision is to create a seamless interface between human intention and machine intelligence,
           letting you focus on your creative work while our AI handles the organization.
           Augmented Productivity is the future.

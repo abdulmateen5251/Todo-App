@@ -30,7 +30,7 @@ export default function AboutPage() {
             </h1>
             
             <p className="text-lg md:text-xl text-text-muted leading-relaxed max-w-2xl mx-auto">
-              We believe productivity isn't just about doing more—it's about doing what matters.
+              We believe productivity isn&apos;t just about doing more—it&apos;s about doing what matters.
             </p>
           </motion.div>
 

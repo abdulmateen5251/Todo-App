@@ -16,10 +16,11 @@ function sleep(ms: number): Promise<void> {
 /**
  * Check if error is retryable (network errors, 5xx, timeouts)
  */
-function isRetryableError(error: any): boolean {
-  if (!error.response) return true; // Network error
-  const status = error.status || error.response?.status;
-  return status >= 500 && status < 600; // Server errors
+function isRetryableError(error: unknown): boolean {
+  const err = error as {response?: {status?: number}; status?: number};
+  if (!err.response) return true; // Network error
+  const status = err.status || err.response?.status;
+  return typeof status === 'number' && status >= 500 && status < 600; // Server errors
 }
 
 class ApiClient {
@@ -83,7 +84,7 @@ class ApiClient {
         if (errorData.detail) {
           // FastAPI validation errors
           if (Array.isArray(errorData.detail)) {
-            errorMessage = errorData.detail.map((err: any) => 
+            errorMessage = errorData.detail.map((err: {loc?: string[]; msg: string}) => 
               `${err.loc?.join('.') || 'field'}: ${err.msg}`
             ).join(', ');
           } else if (typeof errorData.detail === 'string') {
@@ -97,7 +98,7 @@ class ApiClient {
           errorMessage = errorData.message;
         }
         
-        const error: any = new Error(errorMessage);
+        const error = new Error(errorMessage) as Error & {status: number; response: Response; data: unknown};
         error.status = response.status;
         error.response = response;
         error.data = errorData;
@@ -111,7 +112,7 @@ class ApiClient {
       const data = await response.json();
       return data as T;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Retry logic for retryable errors
       if (isRetryableError(error) && attempt < this.maxRetries) {
         const delay = this.retryDelay * Math.pow(2, attempt); // Exponential backoff

@@ -59,15 +59,25 @@ git push origin main
 
 ## 🔑 Required Environment Variables
 
+**⚠️ SECURITY UPDATE**: Old secrets were exposed and have been rotated.
+
 **MUST be set in Vercel Dashboard** before deployment works:
 
 | Variable | Value | Environment |
 |----------|-------|-------------|
 | `NEXT_PUBLIC_API_URL` | `https://abdulmateen5251-phase-2.hf.space` | Production |
 | `NEXTAUTH_URL` | `https://todo-app-eight-phi-57.vercel.app` | Production |
-| `NEXTAUTH_SECRET` | `wtt3EnNWnbNi0uFQtFaZD9gQkBRCWjSw` | Production |
+| `NEXTAUTH_SECRET` | Generate with: `openssl rand -base64 32` | Production |
 | `BETTER_AUTH_URL` | `https://todo-app-eight-phi-57.vercel.app` | Production |
-| `BETTER_AUTH_SECRET` | `wtt3EnNWnbNi0uFQtFaZD9gQkBRCWjSw` | Production |
+| `BETTER_AUTH_SECRET` | Generate with: `openssl rand -base64 32` | Production |
+
+**🔐 Security Note**: Never use hardcoded secrets. Generate your own unique secrets.
+
+### How to Generate Secrets:
+```bash
+# Generate a secure 32-byte secret
+openssl rand -base64 32
+```
 
 ### How to Set Environment Variables:
 

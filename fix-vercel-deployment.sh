@@ -70,5 +70,4 @@ fi
 
 echo ""
 echo -e "${GREEN}✓ Fix applied successfully!${NC}"
-echo ""
-echo "📚 See VERCEL_FIX_GUIDE.md for detailed instructions"
+

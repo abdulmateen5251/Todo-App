@@ -3,13 +3,14 @@ from uuid import UUID
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from src.auth.dependencies import validate_token, verify_user_match, ensure_user_exists
 from src.db.session import get_session
-from src.models.task import Task
+from src.models.task import Task, TaskStatus
 from src.schemas.task import TaskCreate, TaskResponse, TaskUpdate
 
 router = APIRouter()
@@ -26,7 +27,7 @@ async def list_tasks(
     completed: Optional[bool] = Query(None, description="Filter by completion status"),
     limit: int = Query(100, ge=1, le=1000, description="Max tasks to return"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     auth_user_id: UUID = Depends(validate_token),
 ):
     """
@@ -57,7 +58,9 @@ async def list_tasks(
     
     # Apply filters
     if completed is not None:
-        query = query.where(Task.completed == completed)
+        # Map boolean to status enum
+        target_status = TaskStatus.COMPLETED if completed else TaskStatus.PENDING
+        query = query.where(Task.status == target_status)
     
     # Apply pagination
     query = query.offset(offset).limit(limit)
@@ -66,7 +69,8 @@ async def list_tasks(
     query = query.order_by(Task.created_at.desc())
     
     # Execute query
-    tasks = session.exec(query).all()
+    result = await session.execute(query)
+    tasks = result.scalars().all()
     
     return tasks
 
@@ -77,7 +81,7 @@ async def create_task(
     request: Request,
     user_id: UUID,
     task_create: TaskCreate,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     auth_user_id: UUID = Depends(validate_token),
 ):
     """
@@ -105,13 +109,17 @@ async def create_task(
     # Create task
     db_task = Task(
         user_id=user_id,
+        title=task_create.title,
         description=task_create.description,
+        status=task_create.status or TaskStatus.PENDING,
+        priority=task_create.priority,
+        category=task_create.category,
         due_date=task_create.due_date,
     )
     
     session.add(db_task)
-    session.commit()
-    session.refresh(db_task)
+    await session.commit()
+    await session.refresh(db_task)
     
     return db_task
 
@@ -121,8 +129,8 @@ async def create_task(
 async def get_task(
     request: Request,
     user_id: UUID,
-    task_id: UUID,
-    session: Session = Depends(get_session),
+    task_id: int,
+    session: AsyncSession = Depends(get_session),
     auth_user_id: UUID = Depends(validate_token),
 ):
     """
@@ -145,7 +153,7 @@ async def get_task(
     verify_user_match(user_id, auth_user_id)
     
     # Get task
-    task = session.get(Task, task_id)
+    task = await session.get(Task, task_id)
     
     if not task or task.user_id != user_id:
         raise HTTPException(
@@ -161,9 +169,9 @@ async def get_task(
 async def update_task(
     request: Request,
     user_id: UUID,
-    task_id: UUID,
+    task_id: int,
     task_update: TaskUpdate,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_session),
     auth_user_id: UUID = Depends(validate_token),
 ):
     """
@@ -187,7 +195,7 @@ async def update_task(
     verify_user_match(user_id, auth_user_id)
     
     # Get task
-    task = session.get(Task, task_id)
+    task = await session.get(Task, task_id)
     
     if not task or task.user_id != user_id:
         raise HTTPException(
@@ -205,8 +213,8 @@ async def update_task(
     task.updated_at = datetime.utcnow()
     
     session.add(task)
-    session.commit()
-    session.refresh(task)
+    await session.commit()
+    await session.refresh(task)
     
     return task
 
@@ -216,8 +224,8 @@ async def update_task(
 async def toggle_task_completion(
     request: Request,
     user_id: UUID,
-    task_id: UUID,
-    session: Session = Depends(get_session),
+    task_id: int,
+    session: AsyncSession = Depends(get_session),
     auth_user_id: UUID = Depends(validate_token),
 ):
     """
@@ -240,7 +248,7 @@ async def toggle_task_completion(
     verify_user_match(user_id, auth_user_id)
     
     # Get task
-    task = session.get(Task, task_id)
+    task = await session.get(Task, task_id)
     
     if not task or task.user_id != user_id:
         raise HTTPException(
@@ -249,15 +257,20 @@ async def toggle_task_completion(
         )
     
     # Toggle completion
-    task.completed = not task.completed
+    from datetime import datetime
+    if task.status == TaskStatus.COMPLETED:
+        task.status = TaskStatus.PENDING
+        task.completed_at = None
+    else:
+        task.status = TaskStatus.COMPLETED
+        task.completed_at = datetime.utcnow()
     
     # Update timestamp
-    from datetime import datetime
     task.updated_at = datetime.utcnow()
     
     session.add(task)
-    session.commit()
-    session.refresh(task)
+    await session.commit()
+    await session.refresh(task)
     
     return task
 
@@ -267,8 +280,8 @@ async def toggle_task_completion(
 async def delete_task(
     request: Request,
     user_id: UUID,
-    task_id: UUID,
-    session: Session = Depends(get_session),
+    task_id: int,
+    session: AsyncSession = Depends(get_session),
     auth_user_id: UUID = Depends(validate_token),
 ):
     """
@@ -288,7 +301,7 @@ async def delete_task(
     verify_user_match(user_id, auth_user_id)
     
     # Get task
-    task = session.get(Task, task_id)
+    task = await session.get(Task, task_id)
     
     if not task or task.user_id != user_id:
         raise HTTPException(
@@ -297,5 +310,5 @@ async def delete_task(
         )
     
     # Delete task
-    session.delete(task)
-    session.commit()
+    await session.delete(task)
+    await session.commit()

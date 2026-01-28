@@ -7,7 +7,8 @@ import { TaskCreateRequest, TaskUpdateRequest } from '@/types/task';
 interface TaskFormProps {
   onSubmit: (data: TaskCreateRequest | TaskUpdateRequest) => void | Promise<void>;
   initialData?: {
-    description: string;
+    title?: string;
+    description?: string;
     due_date?: string | null;
   };
   submitLabel?: string;
@@ -20,6 +21,7 @@ export function TaskForm({
   submitLabel = 'Add Task',
   onCancel 
 }: TaskFormProps) {
+  const [title, setTitle] = useState(initialData?.title || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [dueDate, setDueDate] = useState(initialData?.due_date || '');
   const [error, setError] = useState('');
@@ -29,23 +31,27 @@ export function TaskForm({
     setError('');
 
     // Validation
-    const trimmed = description.trim();
-    if (!trimmed) {
-      setError('Task description cannot be empty');
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setError('Task title cannot be empty');
       return;
     }
 
-    if (trimmed.length > 200) {
-      setError('Task description must be 200 characters or less');
+    if (trimmedTitle.length > 500) {
+      setError('Task title must be 500 characters or less');
       return;
     }
 
     // Submit data
     const data: TaskCreateRequest | TaskUpdateRequest = {
-      description: trimmed,
+      title: trimmedTitle,
     };
     
-    // Only include due_date if it has a value
+    // Add optional fields
+    if (description.trim()) {
+      data.description = description.trim();
+    }
+    
     if (dueDate) {
       data.due_date = `${dueDate}T00:00:00`;
     }
@@ -54,6 +60,7 @@ export function TaskForm({
 
     // Reset form if creating new task
     if (!initialData) {
+      setTitle('');
       setDescription('');
       setDueDate('');
     }
@@ -61,28 +68,45 @@ export function TaskForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-card p-4 rounded-xl border border-border backdrop-blur-sm shadow-lg">
-      {/* Description input */}
+      {/* Title input */}
       <div>
-        <label htmlFor="description" className="sr-only">
-          Task description
+        <label htmlFor="title" className="sr-only">
+          Task title
         </label>
         <input
-          id="description"
+          id="title"
           type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           placeholder="What needs to be done?"
           className="w-full px-4 py-3 text-sm bg-background border border-border text-text placeholder:text-text-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-inner"
-          maxLength={200}
+          maxLength={500}
           autoFocus={!initialData}
         />
-        <div className="mt-1 flex justify-between items-center">
-          {error ? (
-            <p className="text-xs text-primary-light font-bold animate-pulse">{error}</p>
-          ) : <span></span>}
-          <p className="text-xs text-text-muted">
-            {description.length}/200
-          </p>
+        <div className="mt-1 flex justify-between items-center text-xs">
+          <span className="text-text-muted">{title.length}/500</span>
+          {error && (
+            <p className="text-xs text-red-500 font-bold animate-pulse">{error}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Description input (optional) */}
+      <div>
+        <label htmlFor="description" className="block text-xs font-medium text-text-muted mb-1">
+          Description (optional)
+        </label>
+        <textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Add more details..."
+          rows={3}
+          className="w-full px-4 py-2 text-sm bg-background border border-border text-text placeholder:text-text-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-inner resize-none"
+          maxLength={5000}
+        />
+        <div className="mt-1 text-xs text-right text-text-muted">
+          {description.length}/5000
         </div>
       </div>
 

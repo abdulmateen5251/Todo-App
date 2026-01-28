@@ -32,9 +32,8 @@ export const authOptions: NextAuthOptions = {
 
         // Call backend API to validate credentials
         try {
-          // Use environment variable for API URL
-          // In Docker: http://backend:8000, In Vercel: https://your-api.vercel.app
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://abdulmateen5251-phase-2.hf.space';
+          // Use API_URL for server-side calls (inside Docker), fallback to NEXT_PUBLIC for dev
+          const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
           const response = await fetch(`${apiUrl}/api/users/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -49,13 +48,18 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          const user = await response.json();
-          console.log('Login successful:', user.id);
+          const data = await response.json();
+          console.log('Login successful:', data.id);
+          
+          // Store JWT token in localStorage for API calls
+          if (typeof window !== 'undefined' && data.access_token) {
+            localStorage.setItem('auth_token', data.access_token);
+          }
           
           return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
+            id: data.id,
+            email: data.email,
+            name: data.name,
           };
         } catch (error) {
           console.error('Auth error:', error);

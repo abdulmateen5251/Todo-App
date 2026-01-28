@@ -15,6 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from src.db.session import init_db
 from src.api.tasks import router as tasks_router
 from src.api.users import router as users_router
+from src.api.chat import router as chat_router
 
 load_dotenv()
 
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup: Initialize database
-    init_db()
+    await init_db()
     yield
     # Shutdown: Cleanup (if needed)
 
@@ -123,8 +124,11 @@ async def log_requests(request: Request, call_next):
 
 
 # Include API Routers
+from src.api.chat import router as chat_router
+
 app.include_router(users_router)
 app.include_router(tasks_router, prefix="/api", tags=["tasks"])
+app.include_router(chat_router, tags=["chat"])
 
 
 # Exception Handlers
@@ -148,17 +152,41 @@ async def general_exception_handler(request: Request, exc: Exception):
     """Handle unexpected errors."""
     # Log error details
     import traceback
-    print(f"Unhandled exception: {exc}")
-    print(traceback.format_exc())
+    logger.error(f"Unhandled exception: {exc}")
+    logger.error(traceback.format_exc())
+    
+    # Handle specific error types
+    error_message = "An unexpected error occurred. Please try again later."
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    error_code = "INTERNAL_ERROR"
+    
+    # OpenAI API errors
+    if "openai" in str(type(exc)).lower():
+        if "timeout" in str(exc).lower():
+            error_message = "The AI service is taking too long to respond. Please try again."
+            error_code = "AI_TIMEOUT"
+            status_code = status.HTTP_504_GATEWAY_TIMEOUT
+        elif "rate_limit" in str(exc).lower() or "429" in str(exc):
+            error_message = "Too many requests to the AI service. Please wait a moment and try again."
+            error_code = "AI_RATE_LIMIT"
+            status_code = status.HTTP_429_TOO_MANY_REQUESTS
+        else:
+            error_message = "The AI service encountered an error. Please try again."
+            error_code = "AI_ERROR"
+    
+    # Database errors
+    elif "asyncpg" in str(type(exc)).lower() or "sqlalchemy" in str(type(exc)).lower():
+        error_message = "A database error occurred. Please try again later."
+        error_code = "DATABASE_ERROR"
     
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        status_code=status_code,
         content={
             "error": {
-                "code": "INTERNAL_ERROR",
-                "message": "An unexpected error occurred. Please try again later.",
+                "code": error_code,
+                "message": error_message,
             },
-            "status": 500
+            "status": status_code
         }
     )
 
@@ -174,10 +202,10 @@ async def health_check():
     }
 
 
-# Import and include routers
-# (Will be added in Phase 3)
-# from src.api.tasks import router as tasks_router
-# app.include_router(tasks_router, prefix="/api", tags=["tasks"])
+# Include routers
+app.include_router(tasks_router, tags=["tasks"])
+app.include_router(users_router, tags=["users"])
+app.include_router(chat_router, tags=["chat"])
 
 
 if __name__ == "__main__":

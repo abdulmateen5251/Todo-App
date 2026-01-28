@@ -26,7 +26,9 @@ services:
       dockerfile: Dockerfile
     container_name: todo-backend
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/todo_dev
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/todo_dev
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
       FRONTEND_URL: http://localhost:3000
       ENVIRONMENT: development
       DEV_MODE: "true"
@@ -53,9 +55,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
     container_name: todo-frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://backend:8000
+      # Browser-accessible URL (localhost from user's browser perspective)
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      # Server-side API URL (for SSR, uses Docker service name)
+      API_URL: http://backend:8000
       NODE_ENV: development
       WATCHPACK_POLLING: 'true'
     ports:

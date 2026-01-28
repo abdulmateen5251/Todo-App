@@ -28,3 +28,16 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class LoginResponse(BaseModel):
+    """Schema for login response with JWT token."""
+    id: UUID
+    email: str
+    name: Optional[str] = None
+    created_at: datetime
+    access_token: str
+    token_type: str = "bearer"
+
+    class Config:
+        from_attributes = True

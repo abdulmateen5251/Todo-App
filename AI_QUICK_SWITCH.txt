@@ -1,0 +1,86 @@
+╔══════════════════════════════════════════════════════════════╗
+║           🤖 AI MODEL QUICK SWITCH GUIDE 🤖                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────┐
+│  OPTION 1: OpenAI (gpt-4o-mini) - Fast & Reliable           │
+└──────────────────────────────────────────────────────────────┘
+
+Edit .env:
+  OPENAI_GEMINI_MODE=true
+  OPENAI_API_KEY=sk-proj-YOUR-KEY-HERE
+
+Get Key: https://platform.openai.com/api-keys
+Cost: ~$0.001 per chat message
+
+┌──────────────────────────────────────────────────────────────┐
+│  OPTION 2: Gemini (flash-exp) - FREE!                       │
+└──────────────────────────────────────────────────────────────┘
+
+Edit .env:
+  OPENAI_GEMINI_MODE=false
+  GEMINI_API_KEY=AIzaSyC_YOUR-KEY-HERE
+
+Get Key: https://aistudio.google.com/app/apikey
+Cost: FREE (15 req/min, 1M tokens/day)
+
+┌──────────────────────────────────────────────────────────────┐
+│  🧪 TEST CONFIGURATION                                       │
+└──────────────────────────────────────────────────────────────┘
+
+  python test_ai_config.py
+
+  ✅ Shows which mode is active
+  ✅ Validates API keys
+  ✅ Tests agent module
+
+┌──────────────────────────────────────────────────────────────┐
+│  🚀 START BACKEND                                            │
+└──────────────────────────────────────────────────────────────┘
+
+  cd backend
+  python src/main.py
+
+  Look for startup message:
+    🤖 AI Mode: OpenAI (Model: gpt-4o-mini)
+  or
+    🤖 AI Mode: Gemini (Model: gemini-2.0-flash-exp)
+
+┌──────────────────────────────────────────────────────────────┐
+│  📝 FILES MODIFIED                                           │
+└──────────────────────────────────────────────────────────────┘
+
+  ✓ .env - Added OPENAI_GEMINI_MODE variable
+  ✓ backend/src/agent.py - Conditional model loading
+  ✓ AI_MODEL_SETUP.md - Detailed documentation
+  ✓ test_ai_config.py - Configuration test script
+
+┌──────────────────────────────────────────────────────────────┐
+│  💡 QUICK TIPS                                               │
+└──────────────────────────────────────────────────────────────┘
+
+  • Use Gemini for FREE development/testing
+  • Use OpenAI for production (better reliability)
+  • Switch anytime by changing .env
+  • No code changes needed!
+  • Both use same MCP tools
+
+┌──────────────────────────────────────────────────────────────┐
+│  🐛 TROUBLESHOOTING                                          │
+└──────────────────────────────────────────────────────────────┘
+
+  Error: "Invalid OPENAI_API_KEY"
+    → Get real OpenAI key (starts with 'sk-')
+    → https://platform.openai.com/api-keys
+
+  Error: "GEMINI_API_KEY not found"
+    → Set OPENAI_GEMINI_MODE=false
+    → Get Gemini key from Google AI Studio
+
+  Which mode am I using?
+    → Run: python test_ai_config.py
+    → Check backend startup logs
+
+╔══════════════════════════════════════════════════════════════╗
+║  READY TO USE! Switch modes in .env and restart backend     ║
+╚══════════════════════════════════════════════════════════════╝

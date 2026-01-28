@@ -5,15 +5,21 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlmodel import Session, select
+from jose import jwt, JWTError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 security = HTTPBearer(auto_error=False)  # Don't auto-error in dev mode
 
 # Development mode flag
 DEV_MODE = os.getenv("DEV_MODE", "true").lower() == "true"
 
+# JWT Configuration (same as in users.py)
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-key-change-in-production")
+JWT_ALGORITHM = "HS256"
 
-def ensure_user_exists(user_id: UUID, session: Session) -> None:
+
+async def ensure_user_exists(user_id: UUID, session: AsyncSession) -> None:
     """
     Ensure user exists in database. Auto-create in dev mode.
     
@@ -27,7 +33,8 @@ def ensure_user_exists(user_id: UUID, session: Session) -> None:
     from src.models.user import User
     
     # Check if user exists
-    user = session.get(User, user_id)
+    result = await session.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
     
     if not user:
         if DEV_MODE:
@@ -38,7 +45,7 @@ def ensure_user_exists(user_id: UUID, session: Session) -> None:
                 name=f"Dev User"
             )
             session.add(user)
-            session.commit()
+            await session.commit()
         else:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -106,9 +113,7 @@ async def validate_token(
 
 def extract_user_id_from_token(token: str) -> UUID:
     """
-    Extract user_id from Better Auth JWT token.
-    
-    TODO: Implement actual JWT decoding and validation.
+    Extract user_id from JWT token with proper validation.
     
     Args:
         token: JWT token string
@@ -117,17 +122,25 @@ def extract_user_id_from_token(token: str) -> UUID:
         user_id from token's 'sub' claim
         
     Raises:
-        ValueError: If token cannot be decoded or user_id is missing
+        JWTError: If token cannot be decoded or is invalid
+        ValueError: If user_id is missing or invalid
     """
-    # Placeholder - in production, use:
-    # from jose import jwt
-    # payload = jwt.decode(token, PUBLIC_KEY, algorithms=["RS256"])
-    # return UUID(payload["sub"])
-    
-    raise NotImplementedError(
-        "Better Auth token validation not yet implemented. "
-        "See src/auth/dependencies.py for TODO notes."
-    )
+    try:
+        # Decode and verify JWT token
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        
+        # Extract user_id from 'sub' claim
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            raise ValueError("Token missing 'sub' claim")
+        
+        # Convert to UUID
+        return UUID(user_id_str)
+        
+    except JWTError as e:
+        raise JWTError(f"Invalid token: {str(e)}")
+    except ValueError as e:
+        raise ValueError(f"Invalid user_id in token: {str(e)}")
 
 
 def verify_user_match(path_user_id: UUID, token_user_id: UUID) -> None:

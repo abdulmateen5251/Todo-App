@@ -11,7 +11,8 @@ interface TaskEditModalProps {
 }
 
 export function TaskEditModal({ task, onSave, onCancel }: TaskEditModalProps) {
-  const [description, setDescription] = useState(task.description);
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || '');
   const [dueDate, setDueDate] = useState(task.due_date || '');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -19,7 +20,8 @@ export function TaskEditModal({ task, onSave, onCancel }: TaskEditModalProps) {
 
   // Update form if task changes
   useEffect(() => {
-    setDescription(task.description);
+    setTitle(task.title);
+    setDescription(task.description || '');
     setDueDate(task.due_date || '');
   }, [task]);
 
@@ -34,24 +36,35 @@ export function TaskEditModal({ task, onSave, onCancel }: TaskEditModalProps) {
     }
 
     // Validation
-    const trimmed = description.trim();
-    if (!trimmed) {
-      setError('Task description cannot be empty');
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setError('Task title cannot be empty');
       return;
     }
 
-    if (trimmed.length > 200) {
-      setError('Task description must be 200 characters or less');
+    if (trimmedTitle.length > 500) {
+      setError('Task title must be 500 characters or less');
       return;
     }
 
     // Save changes
     setSaving(true);
     try {
-      await onSave(task.id, {
-        description: trimmed,
-        due_date: dueDate ? `${dueDate}T00:00:00` : null,
-      });
+      const updateData: TaskUpdateRequest = {
+        title: trimmedTitle,
+      };
+      
+      if (description.trim()) {
+        updateData.description = description.trim();
+      }
+      
+      if (dueDate) {
+        updateData.due_date = `${dueDate}T00:00:00`;
+      } else {
+        updateData.due_date = null;
+      }
+      
+      await onSave(task.id, updateData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save changes');
       setSaving(false);
@@ -97,10 +110,29 @@ export function TaskEditModal({ task, onSave, onCancel }: TaskEditModalProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
+          {/* Title input */}
+          <div>
+            <label htmlFor="edit-title" className="block text-sm font-medium text-gray-700 mb-1">
+              Title *
+            </label>
+            <input
+              id="edit-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              maxLength={500}
+              autoFocus
+            />
+            <div className="mt-1 text-xs text-gray-400 text-right">
+              {title.length}/500
+            </div>
+          </div>
+
           {/* Description input */}
           <div>
             <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
+              Description (optional)
             </label>
             <textarea
               id="edit-description"
@@ -108,15 +140,14 @@ export function TaskEditModal({ task, onSave, onCancel }: TaskEditModalProps) {
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              maxLength={200}
-              autoFocus
+              maxLength={5000}
             />
             <div className="mt-1 flex justify-between items-center">
               {error && (
                 <p className="text-xs text-red-600">{error}</p>
               )}
               <p className="text-xs text-gray-400 ml-auto">
-                {description.length}/200
+                {description.length}/5000
               </p>
             </div>
           </div>

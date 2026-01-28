@@ -21,6 +21,28 @@ export default function SignIn() {
     setLoading(true);
 
     try {
+      // First, call backend directly to get token
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const loginResponse = await fetch(`${apiUrl}/api/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!loginResponse.ok) {
+        setError('Invalid email or password');
+        setLoading(false);
+        return;
+      }
+
+      const loginData = await loginResponse.json();
+      
+      // Store token in localStorage for API calls
+      if (loginData.access_token) {
+        localStorage.setItem('auth_token', loginData.access_token);
+      }
+
+      // Then sign in with NextAuth for session management
       const result = await signIn('credentials', {
         email,
         password,
@@ -29,12 +51,14 @@ export default function SignIn() {
 
       if (result?.error) {
         setError('Invalid email or password');
+        localStorage.removeItem('auth_token'); // Clean up on error
       } else if (result?.ok) {
-        router.push('/');
+        router.push('/dashboard');
         router.refresh();
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
+      localStorage.removeItem('auth_token'); // Clean up on error
     } finally {
       setLoading(false);
     }

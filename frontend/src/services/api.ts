@@ -110,6 +110,27 @@ class ApiClient {
       }
 
       const data = await response.json();
+      
+      // Transform backend task response to match frontend Task interface
+      // Backend returns: { status: "completed" | "pending" }
+      // Frontend expects: { completed: boolean }
+      if (this.isTaskResponse(data)) {
+        const transformed = this.transformTask(data);
+        console.log('🔄 Single task transformed:', { original: data.status, completed: transformed.completed });
+        return transformed as T;
+      }
+      
+      // Transform array of tasks
+      if (Array.isArray(data)) {
+        if (data.length > 0 && this.isTaskResponse(data[0])) {
+          const transformed = data.map(task => this.transformTask(task));
+          console.log('🔄 Task array transformed:', transformed.length, 'tasks');
+          return transformed as T;
+        }
+        // Return empty array as-is
+        return data as T;
+      }
+      
       return data as T;
 
     } catch (error: unknown) {
@@ -132,20 +153,35 @@ class ApiClient {
 
   private async getAuthToken(): Promise<string | null> {
     /**
-     * Retrieve token from NextAuth session
-     * Integrated with Better Auth flow
+     * Retrieve JWT token for backend API authentication
+     * Token is stored in localStorage during signin/signup
      */
-    try {
-      // Get session from NextAuth
-      const response = await fetch('/api/auth/session');
-      const session = await response.json();
-      
-      // Return the token if available
-      // In production, this would be the JWT token from Better Auth
-      return session?.user?.id || null;
-    } catch {
-      return null;
+    if (typeof window === 'undefined') {
+      return null; // Server-side rendering
     }
+    
+    // Get token from localStorage (set during signin/signup)
+    const token = localStorage.getItem('auth_token');
+    return token;
+  }
+
+  /**
+   * Check if response data is a task object
+   */
+  private isTaskResponse(data: any): boolean {
+    return data && typeof data === 'object' && 'status' in data && 'user_id' in data;
+  }
+
+  /**
+   * Transform backend task to frontend Task interface
+   * Backend: { status: "completed" | "pending" }
+   * Frontend: { completed: boolean }
+   */
+  private transformTask(task: any): any {
+    return {
+      ...task,
+      completed: task.status === 'completed'
+    };
   }
 
   // Task endpoints
@@ -177,9 +213,8 @@ class ApiClient {
   }
 
   async completeTask(userId: string, taskId: string, completed: boolean): Promise<Task> {
-    return this.request<Task>('PATCH', `/api/${userId}/tasks/${taskId}/complete`, {
-      body: { completed },
-    });
+    // Backend toggle endpoint doesn't need body - it just toggles the current state
+    return this.request<Task>('PATCH', `/api/${userId}/tasks/${taskId}/complete`);
   }
 
   async deleteTask(userId: string, taskId: string): Promise<void> {

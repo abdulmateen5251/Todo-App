@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sparkles, Github } from 'lucide-react';
+import { Menu, X, Sparkles, Github, MessageSquare } from 'lucide-react';
 import { Button } from './Button';
 import { ThemeToggle } from '../theme/ThemeToggle';
 
@@ -55,12 +55,14 @@ export function Navbar() {
               About
             </Link>
             {session && (
-              <Link
-                href="/dashboard"
-                className="text-sm font-medium text-text-muted hover:text-primary transition-colors"
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  className="text-sm font-medium text-text-muted hover:text-primary transition-colors"
+                >
+                  Dashboard
+                </Link>
+              </>
             )}
             <a
               href="https://github.com/abdulmateen5251"
@@ -153,13 +155,15 @@ export function Navbar() {
               About
             </Link>
             {session && (
-              <Link
-                href="/dashboard"
-                onClick={() => setIsOpen(false)}
-                className="text-lg font-medium text-text py-2 hover:text-primary border-b border-border"
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setIsOpen(false)}
+                  className="text-lg font-medium text-text py-2 hover:text-primary border-b border-border"
+                >
+                  Dashboard
+                </Link>
+              </>
             )}
             <a
               href="https://github.com/abdulmateen5251"

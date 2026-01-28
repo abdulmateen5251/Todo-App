@@ -7,6 +7,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Task, TaskCreateRequest, TaskUpdateRequest } from '@/types/task';
 import { apiClient } from '@/services/api';
+import { eventBus, EVENTS } from '@/lib/eventBus';
 
 interface UseTasksState {
   tasks: Task[];
@@ -134,6 +135,40 @@ export function useTasks(userId?: string): UseTasksReturn {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  // Listen for refresh events from other components (e.g., chat)
+  useEffect(() => {
+    console.log('🎧 useTasks: Setting up event listener for TASKS_REFRESH');
+    
+    const handleRefresh = async () => {
+      console.log('📢 useTasks: Received TASKS_REFRESH event, refetching tasks...');
+      if (!userId) {
+        console.warn('⚠️ useTasks: Cannot refresh - no userId');
+        return;
+      }
+
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+      try {
+        const tasks = await apiClient.listTasks(userId);
+        console.log('✅ useTasks: Successfully fetched', tasks.length, 'tasks');
+        setState((prev) => ({ ...prev, tasks, loading: false }));
+      } catch (error) {
+        console.error('❌ useTasks: Error fetching tasks:', error);
+        setState((prev) => ({
+          ...prev,
+          error: error instanceof Error ? error.message : 'Failed to fetch tasks',
+          loading: false,
+        }));
+      }
+    };
+    
+    const unsubscribe = eventBus.on(EVENTS.TASKS_REFRESH, handleRefresh);
+
+    return () => {
+      console.log('🔌 useTasks: Cleaning up event listener');
+      unsubscribe();
+    };
+  }, [userId]); // Only depend on userId, not fetchTasks
 
   return {
     ...state,

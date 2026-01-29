@@ -27,6 +27,8 @@ services:
     container_name: todo-backend
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/todo_dev
+      OPENAI_GEMINI_MODE: ${OPENAI_GEMINI_MODE:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
       FRONTEND_URL: http://localhost:3000

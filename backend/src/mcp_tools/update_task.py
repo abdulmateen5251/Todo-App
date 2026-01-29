@@ -10,10 +10,14 @@ from src.models.task import TaskPriority
 class UpdateTaskInput(BaseModel):
     """Input schema for update_task MCP tool."""
     
-    task_id: int = Field(
-        ...,
-        description="ID of the task to update",
+    task_id: Optional[int] = Field(
+        None,
+        description="ID of the task to update (optional if current_title is provided)",
         gt=0
+    )
+    current_title: Optional[str] = Field(
+        None,
+        description="Current title/name of the task to update (preferred over task_id)"
     )
     title: Optional[str] = Field(
         None,
@@ -39,17 +43,17 @@ class UpdateTaskInput(BaseModel):
     
     @validator("task_id")
     def validate_task_id(cls, v):
-        """Ensure task_id is positive."""
-        if v <= 0:
+        """Ensure task_id is positive if provided."""
+        if v is not None and v <= 0:
             raise ValueError("Task ID must be a positive integer")
         return v
     
-    @validator("title")
-    def validate_title(cls, v):
-        """Ensure title is not empty if provided."""
-        if v is not None and not v.strip():
-            raise ValueError("Title cannot be empty")
-        return v.strip() if v else None
+    @validator("current_title")
+    def validate_identifiers(cls, v, values):
+        """Ensure at least one identifier is provided."""
+        if v is None and values.get('task_id') is None:
+            raise ValueError("Either task_id or current_title must be provided")
+        return v
     
     @validator("due_date")
     def validate_due_date(cls, v):
@@ -96,13 +100,17 @@ def get_update_task_schema() -> Dict[str, Any]:
     """
     return {
         "name": "update_task",
-        "description": "Update properties of an existing task (title, description, priority, category, or due date)",
+        "description": "Update properties of an existing task. PREFER using current_title (task name) instead of task_id.",
         "parameters": {
             "type": "object",
             "properties": {
+                "current_title": {
+                    "type": "string",
+                    "description": "The current title/name of the task to update. ALWAYS use this when user says 'update buy groceries' or 'change meeting priority'. This is the PREFERRED way."
+                },
                 "task_id": {
                     "type": "integer",
-                    "description": "The unique ID of the task to update"
+                    "description": "The numeric ID (only use if user explicitly mentions a number like 'update task 5')"
                 },
                 "title": {
                     "type": "string",
@@ -126,7 +134,7 @@ def get_update_task_schema() -> Dict[str, Any]:
                     "description": "New task category or tag (optional)"
                 }
             },
-            "required": ["task_id"]
+            "required": []
         }
     }
 
@@ -160,6 +168,44 @@ async def execute_update_task(
         if not input_data.has_updates():
             raise ValueError("At least one field must be provided to update")
         
+        task_id_to_update = input_data.task_id
+        
+        # If current_title is provided instead of ID, find the task by title
+        if task_id_to_update is None and input_data.current_title:
+            # Get all user's tasks
+            tasks = await task_service.get_tasks(
+                session=session,
+                user_id=user_id
+            )
+            
+            search_title = input_data.current_title.lower().strip()
+            
+            # First try exact match (case-insensitive)
+            matching_tasks = [
+                t for t in tasks 
+                if t.title.lower().strip() == search_title
+            ]
+            
+            # If no exact match, try partial match
+            if not matching_tasks:
+                matching_tasks = [
+                    t for t in tasks 
+                    if search_title in t.title.lower().strip() or t.title.lower().strip() in search_title
+                ]
+            
+            if not matching_tasks:
+                if tasks:
+                    task_names = ", ".join([f"'{t.title}'" for t in tasks[:5]])
+                    raise ValueError(f"No task found matching '{input_data.current_title}'. Your tasks: {task_names}")
+                else:
+                    raise ValueError(f"No tasks found. Your task list is empty.")
+            
+            if len(matching_tasks) > 1:
+                task_list = ", ".join([f"'{t.title}'" for t in matching_tasks])
+                raise ValueError(f"Multiple tasks found: {task_list}. Please be more specific.")
+            
+            task_id_to_update = matching_tasks[0].id
+        
         # Build updates dictionary
         updates = {}
         
@@ -188,13 +234,13 @@ async def execute_update_task(
         # Update task
         task = await task_service.update_task(
             session=session,
-            task_id=input_data.task_id,
+            task_id=task_id_to_update,
             user_id=user_id,
             **updates
         )
         
         if task is None:
-            raise ValueError(f"Task with ID {input_data.task_id} not found or does not belong to you")
+            raise ValueError(f"Task not found or does not belong to you")
         
         # Build response with updated fields
         updated_fields = list(updates.keys())

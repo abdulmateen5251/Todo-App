@@ -1,4 +1,5 @@
 """Chat endpoint for conversational task management."""
+import json
 import logging
 from typing import Annotated, Dict, Any
 
@@ -81,6 +82,7 @@ async def chat(
             model=DEFAULT_MODEL,
             messages=messages,
             tools=tools,
+            tool_choice="auto",  # Allow model to choose when to use tools
             temperature=DEFAULT_TEMPERATURE
         )
         
@@ -94,7 +96,7 @@ async def chat(
             logger.info(f"Agent called {len(assistant_message.tool_calls)} tool(s) for user {user.id}")
             for tool_call in assistant_message.tool_calls:
                 tool_name = tool_call.function.name
-                tool_args = eval(tool_call.function.arguments)  # Parse JSON string
+                tool_args = json.loads(tool_call.function.arguments)  # Parse JSON string safely
                 
                 tool_calls_data.append({
                     "id": tool_call.id,
@@ -102,56 +104,77 @@ async def chat(
                     "arguments": tool_args
                 })
                 
-                # Execute tool
-                if tool_name == "add_task":
-                    result = await execute_add_task(
-                        user_id=user.id,
-                        session=session,
-                        **tool_args
-                    )
+                # Execute tool with error handling
+                try:
+                    if tool_name == "add_task":
+                        result = await execute_add_task(
+                            user_id=user.id,
+                            session=session,
+                            **tool_args
+                        )
+                        tool_results_data.append({
+                            "id": tool_call.id,
+                            "result": result
+                        })
+                    elif tool_name == "list_tasks":
+                        result = await execute_list_tasks(
+                            user_id=user.id,
+                            session=session,
+                            **tool_args
+                        )
+                        tool_results_data.append({
+                            "id": tool_call.id,
+                            "result": result
+                        })
+                    elif tool_name == "complete_task":
+                        result = await execute_complete_task(
+                            user_id=user.id,
+                            session=session,
+                            **tool_args
+                        )
+                        tool_results_data.append({
+                            "id": tool_call.id,
+                            "result": result
+                        })
+                    elif tool_name == "update_task":
+                        result = await execute_update_task(
+                            user_id=user.id,
+                            session=session,
+                            **tool_args
+                        )
+                        tool_results_data.append({
+                            "id": tool_call.id,
+                            "result": result
+                        })
+                    elif tool_name == "delete_task":
+                        result = await execute_delete_task(
+                            user_id=user.id,
+                            session=session,
+                            **tool_args
+                        )
+                        tool_results_data.append({
+                            "id": tool_call.id,
+                            "result": result
+                        })
+                except ValueError as e:
+                    # Tool execution failed with validation error
+                    logger.warning(f"Tool {tool_name} failed for user {user.id}: {str(e)}")
                     tool_results_data.append({
                         "id": tool_call.id,
-                        "result": result
+                        "result": {
+                            "success": False,
+                            "error": str(e)
+                        }
                     })
-                elif tool_name == "list_tasks":
-                    result = await execute_list_tasks(
-                        user_id=user.id,
-                        session=session,
-                        **tool_args
-                    )
+                except Exception as e:
+                    # Tool execution failed with unexpected error
+                    logger.error(f"Tool {tool_name} error for user {user.id}: {str(e)}", exc_info=True)
                     tool_results_data.append({
                         "id": tool_call.id,
-                        "result": result
-                    })
-                elif tool_name == "complete_task":
-                    result = await execute_complete_task(
-                        user_id=user.id,
-                        session=session,
-                        **tool_args
-                    )
-                    tool_results_data.append({
-                        "id": tool_call.id,
-                        "result": result
-                    })
-                elif tool_name == "update_task":
-                    result = await execute_update_task(
-                        user_id=user.id,
-                        session=session,
-                        **tool_args
-                    )
-                    tool_results_data.append({
-                        "id": tool_call.id,
-                        "result": result
-                    })
-                elif tool_name == "delete_task":
-                    result = await execute_delete_task(
-                        user_id=user.id,
-                        session=session,
-                        **tool_args
-                    )
-                    tool_results_data.append({
-                        "id": tool_call.id,
-                        "result": result
+                        "result": {
+                            "success": False,
+                            "error": f"Failed to execute {tool_name}: {str(e)}"
+                        }
                     })
         
         # Step 6: Get final response (may need second API call if tools were used)

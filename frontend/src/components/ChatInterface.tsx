@@ -26,7 +26,11 @@ export function ChatInterface() {
   }, [messages]);
 
   // Check if user is authenticated
+  console.log('🔐 [CHAT] Auth status:', status);
+  console.log('👤 [CHAT] Session:', session ? 'exists' : 'null');
+  
   if (status === 'loading') {
+    console.log('⏳ [CHAT] Auth loading...');
     return (
       <div className="flex items-center justify-center h-full p-8">
         <div className="animate-pulse text-neutral-tan">Loading chat...</div>
@@ -35,6 +39,7 @@ export function ChatInterface() {
   }
 
   if (!session) {
+    console.warn('⚠️ [CHAT] No session found, user not authenticated');
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 gap-4">
         <AlertCircle className="w-12 h-12 text-yellow-500" />
@@ -47,23 +52,44 @@ export function ChatInterface() {
       </div>
     );
   }
+  
+  console.log('✅ [CHAT] User authenticated, rendering chat interface');
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🎯 [CHAT] handleSendMessage called');
+    console.log('📝 [CHAT] Input value:', input);
+    console.log('⏳ [CHAT] Is loading:', isLoading);
+    console.log('👤 [CHAT] Session status:', status);
+    console.log('🔑 [CHAT] Has session:', !!session);
+    
     const content = input.trim();
-    if (!content || isLoading) return;
+    if (!content) {
+      console.warn('⚠️ [CHAT] Empty message, ignoring');
+      return;
+    }
+    
+    if (isLoading) {
+      console.warn('⚠️ [CHAT] Already loading, ignoring');
+      return;
+    }
 
+    console.log('✅ [CHAT] Validation passed, sending message...');
+    
     // Add user message immediately
     const userMessage = { role: 'user' as const, content };
+    console.log('➕ [CHAT] Adding user message to context');
     addMessage(userMessage);
     setInput('');
     
     setIsLoading(true);
+    console.log('🔄 [CHAT] Loading state set to true');
     
     try {
-      // Send to backend API
+      console.log('📡 [CHAT] Calling sendChatMessage API...');
       const response = await sendChatMessage(content);
+      console.log('✅ [CHAT] API call successful');
       
       // Add assistant response
       const assistantMessage = {
@@ -71,28 +97,35 @@ export function ChatInterface() {
         content: response.message
       };
       
+      console.log('➕ [CHAT] Adding assistant message to context');
       addMessage(assistantMessage);
       
       // Check if task was created/modified - emit event to refresh dashboard
       if (response.tool_calls && response.tool_calls.length > 0) {
         const toolNames = response.tool_calls.map(tc => tc.name);
-        console.log('🔧 Tool calls detected:', toolNames);
+        console.log('🔧 [CHAT] Tool calls detected:', toolNames);
         
         const taskModifyingTools = ['add_task', 'update_task', 'complete_task', 'delete_task'];
         const hasTaskChange = toolNames.some(name => taskModifyingTools.includes(name));
         
         if (hasTaskChange) {
-          console.log('📤 Emitting TASKS_REFRESH event...');
+          console.log('📤 [CHAT] Task modification detected, emitting TASKS_REFRESH event...');
           // Small delay to ensure backend has completed
           setTimeout(() => {
             eventBus.emit(EVENTS.TASKS_REFRESH);
-            console.log('✅ Event emitted!');
+            console.log('✅ [CHAT] TASKS_REFRESH event emitted!');
           }, 100);
+        } else {
+          console.log('ℹ️ [CHAT] Tool calls present but no task modifications');
         }
       } else {
-        console.log('ℹ️ No tool calls in response');
+        console.log('ℹ️ [CHAT] No tool calls in response');
       }
     } catch (error) {
+      console.error('💥 [CHAT] Error occurred:', error);
+      console.error('💥 [CHAT] Error type:', error instanceof Error ? 'Error' : typeof error);
+      console.error('💥 [CHAT] Error message:', error instanceof Error ? error.message : String(error));
+      
       // Show error message
       const errorMessage = {
         role: 'assistant' as const,
@@ -101,9 +134,12 @@ export function ChatInterface() {
           : 'Sorry, I encountered an error. Please try again.'
       };
       
+      console.log('➕ [CHAT] Adding error message to context');
       addMessage(errorMessage);
     } finally {
       setIsLoading(false);
+      console.log('🔄 [CHAT] Loading state set to false');
+      console.log('✅ [CHAT] handleSendMessage complete');
     }
   };
 

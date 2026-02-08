@@ -4,6 +4,13 @@
   "installCommand": "npm install",
   "devCommand": "npm run dev",
   "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@next_public_api_url",
+    "NEXTAUTH_URL": "@nextauth_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "BETTER_AUTH_URL": "@better_auth_url",
+    "BETTER_AUTH_SECRET": "@better_auth_secret"
+  },
   "headers": [
     {
       "source": "/(.*)",
@@ -26,13 +33,23 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=()"
+          "value": "geolocation=(), microphone=(), camera=()"
         },
         {
           "key": "Content-Security-Policy",
           "value": "upgrade-insecure-requests"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://todo-app-api.vercel.app/api/:path*"
     }
   ]
 }
